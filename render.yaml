@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: vaultcord-video-transcoder
+    env: docker
+    plan: starter
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: SUPABASE_URL
+        value: https://pwtjgkkxdnmksmvkcjyh.supabase.co
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: STORAGE_BUCKET
+        value: chat-uploads
+      - key: WEBHOOK_SECRET
+        sync: false
+      - key: FFMPEG_PRESET
+        value: veryfast
+      - key: MAX_VIDEO_MB
+        value: 200
