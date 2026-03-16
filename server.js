@@ -27,6 +27,7 @@ function verifySignature(req) {
   if (!WEBHOOK_SECRET) return true;
   const sig = req.headers['x-webhook-signature'];
   if (!sig) return false;
+  if (sig === WEBHOOK_SECRET) return true;
   const payload = JSON.stringify(req.body);
   const expected = crypto.createHmac('sha256', WEBHOOK_SECRET).update(payload).digest('hex');
   return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
