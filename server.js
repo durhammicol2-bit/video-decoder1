@@ -166,6 +166,59 @@ app.get('/wordle/today', async (req, res) => {
   }
 });
 
+app.post('/webhook/notify-email', async (req, res) => {
+  try {
+    if (!verifySignature(req)) {
+      return res.status(401).send('invalid signature');
+    }
+
+    const to = req.body?.email;
+    const fromUser = req.body?.from_user || 'Someone';
+    const channel = req.body?.channel || '';
+    const type = req.body?.type || 'mention';
+
+    if (!to) return res.status(400).json({ error: 'missing_email' });
+
+    const subject =
+      type === 'reply'
+        ? `${fromUser} replied to you in ${channel}`
+        : type === 'everyone'
+          ? `${fromUser} mentioned everyone in ${channel}`
+          : `${fromUser} mentioned you in ${channel}`;
+
+    const text = `${fromUser} ${type === 'reply' ? 'replied to you' : (type === 'everyone' ? 'mentioned everyone' : 'mentioned you')} in ${channel}.`;
+
+    const apiKey = process.env.RESEND_API_KEY;
+    const from = process.env.RESEND_FROM;
+    if (!apiKey || !from) {
+      return res.status(500).json({ error: 'resend_not_configured' });
+    }
+
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from,
+        to,
+        subject,
+        text
+      })
+    });
+
+    if (!r.ok) {
+      const body = await r.text();
+      return res.status(502).json({ error: 'resend_failed', body });
+    }
+
+    return res.status(200).json({ ok: true });
+  } catch (err) {
+    return res.status(500).json({ error: 'notify_error' });
+  }
+});
+
 const port = process.env.PORT || 10000;
 app.listen(port, () => {
   console.log(`transcoder listening on ${port}`);
